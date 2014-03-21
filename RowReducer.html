@@ -1,0 +1,158 @@
+<!--
+	This is a bare bones implementation of row reduction of matrices.
+	It was created because I needed a method for row reducing matrices that
+		1) displayed the calculations that followed every step
+		2) could take an infinitely sized matrix
+	And I could not find one online that did both, so I made my own.
+	Controls are fairly straightforward, input matrix as specified, choose
+	the matrix to reduce, and the resultant matrix should be saved to the list
+	of matrices on file.
+	CSS is yet to be implemented. The UI is suboptimal.
+-->
+<title>Row Reduction</title>
+<div>Please enter a valid matrix, with row entries separated by commas with rows on different lines.</div>
+<div><textarea id = "nm" cols = "30" rows = "10"></textarea>
+<button type="button" onclick = "input_matrix()">Input Matrix</button></div>
+<div><button type="button" onclick = "remove_matrix()">Remove Matrix #</button><input id = "index" type = "number"></input></div>
+<div><button type="button" onclick = "row_reduce()">Row Reduce Matrix #</button><input id = "num" type = "number"></input></div>
+<pre id="matrix_list"></pre>
+<pre id="output"></pre>
+<script>
+/* This script as a whole
+1) parses input matrices and stores them in two dimensional arrays
+2) lists out all of the stored matrices
+3) removes matrices from the list
+4) row reduces matrices and adds them to the list of all stored matrices
+
+This implementation does not handle any errors. Therefore it is imperative
+that every matrix is entered in correctly.
+*/
+
+//arr is an array of matrices.
+var arr = new Array();
+
+/* input_matrix() is called whenever the Input Matrix button is pressed.
+using the stringToMatrix function, it parses the input text area and adds
+a correspondingly sized matrix to arr. */
+function input_matrix(){
+	rawdata = document.getElementById("nm").value;
+	rawdata = "[[" + rawdata + "]]";
+	arr.push(stringToMatrix(rawdata));
+	document.getElementById("matrix_list").innerHTML += (arr.length) + ": <br/>" + matrixToString(arr[arr.length - 1]);
+}
+
+//given a matrix index ID, it removes the corresponding matrix from arr.
+function remove_matrix(){
+	ind = document.getElementById("index").value;
+	arr.splice(ind-1, 1);
+	document.getElementById("matrix_list").innerHTML = ""
+	for (var i = 0; i<arr.length; i++){
+		document.getElementById("matrix_list").innerHTML += (i+1) + ": <br/>" + matrixToString(arr[i]);
+	}
+}
+// inputs a matrix created within the code itself.
+function input_specific_matrix(matrix){
+	arr.push(matrix);
+	document.getElementById("matrix_list").innerHTML += (arr.length) + ": <br/>" + matrixToString(arr[arr.length - 1]);
+
+}
+// given a string separated with commas and spaces for elements and rows,
+// converts this string into a two dimensional array.
+function stringToMatrix(rawdata){
+	for (var i = 0; i<rawdata.length; i++){
+		if (rawdata.substring(i, i+1) === "\n"){
+			rawdata = rawdata.substring(0, i) + "],[" + rawdata.substring(i+1);
+		}
+	}
+	return JSON.parse(rawdata);
+}
+
+//multiplies all of the values of the nth row of matrix by x.
+function scale(n, x, matrix){
+	for (var i = 0; i < matrix[n].length; i++) {
+		matrix[n][i] = matrix[n][i] * x;
+	}
+}
+//replaces the n1st row with the sum of the n1st and n2nd rows in matrix.
+function add(n1, n2, matrix){
+	for (var i = 0; i<matrix[n1].length; i++) {
+		matrix[n1][i] = matrix[n1][i] + matrix[n2][i]
+	}
+}
+//swaps the n1st and n2nd row.
+function swap(n1, n2, matrix){
+	var temp = matrix[n1];
+	matrix[n1] = matrix[n2];
+	matrix[n2] = temp;
+}
+//row reduces the matrix given in the text field row_reduce()
+function row_reduce(){
+	document.getElementById("output").innerHTML = "CALCULATIONS: <br/>"
+	matrix = arr[document.getElementById("num").value - 1]
+	pivot_row = 0;
+	pivot_column = 0;
+	while (true){
+		// base case
+		if (pivot_column >= matrix[0].length || pivot_row >= matrix.length){
+			break;
+		}
+		if (matrix[pivot_row][pivot_column] == 0) {
+			skip = true;
+			if (pivot_row < matrix.length - 1){
+				for (var j = pivot_row+1; j<matrix.length; j++) {
+					if (matrix[j][pivot_column] != 0) {
+						swap(pivot_row, j, matrix);
+						//adding to the calculation.
+						document.getElementById("output").innerHTML += matrixToString(matrix);
+						skip = false;
+						break;
+					}
+				}
+			}
+			if (skip) {
+				pivot_column += 1;
+				continue;
+			}
+		}
+		for (var i = 0; i<matrix.length; i++) {
+			if (!(pivot_row == i || matrix[i][pivot_column] == 0)) {
+				scale(pivot_row, -matrix[i][pivot_column]/matrix[pivot_row][pivot_column], matrix);
+				add(i, pivot_row, matrix);
+			}
+		}
+		scale(pivot_row, 1/matrix[pivot_row][pivot_column], matrix);
+		document.getElementById("output").innerHTML += matrixToString(matrix);
+		pivot_row++;
+		pivot_column++;
+	}
+	input_specific_matrix(matrix);
+	document.getElementById("output").innerHTML += "The reduced row echelon form of matrix " + document.getElementById("num").value 
+	+ " is matrix #" + arr.length
+
+
+}
+//return the String equivalent of a matrix.
+function matrixToString(arr) {
+	returnString = "";
+	for (var i = 0; i < arr.length; i++){
+		for (var j = 0; j < arr[i].length; j++){
+			str = "" + Math.round(arr[i][j]*10000)/10000;
+			spacer = " ";
+			for (var k = 0; k < (8-str.length); k++) {
+				spacer += " ";
+			}
+			returnString += str + spacer
+		}
+		returnString += "<br/>";
+	}
+	return returnString + "<br/>";
+
+
+}
+
+
+
+
+
+
+</script>
